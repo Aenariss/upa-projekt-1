@@ -12,7 +12,7 @@ docker build -f Dockerfile -t upa_proj_mongo:latest .
 Then you run container based on currently created image
 
 ```bash
-docker run -it --rm --name proj_upa mongo_upa:latest /bin/bash
+docker run -it --rm --name upa_proj_mongo upa_proj_mongo:latest /bin/bash
 ```
 
 Note: --rm flag removes container after exiting, when you want container to persist remove --rm flag

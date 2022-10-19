@@ -1,2 +1,4 @@
 resources/
 xmls/
+/mongo-data
+/mongo-app

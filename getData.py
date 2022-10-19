@@ -6,6 +6,8 @@ import urllib.request
 import re
 import os
 from sys import argv
+import zipfile
+import gzip
 
 # Class to download files
 # Usage is: import the class and use the getFiles method
@@ -21,6 +23,7 @@ class Downloader:
 
     def __init__(self):
         self.__resource_folder = os.path.dirname(os.path.realpath(__file__)) + '/resources/'
+        self.__xml_folder = os.path.dirname(os.path.realpath(__file__)) + '/xmls/'
         self.__url = 'https://portal.cisjr.cz/pub/draha/celostatni/szdc/2022/'
         self.__base_url = 'https://portal.cisjr.cz'
 
@@ -46,6 +49,10 @@ class Downloader:
         # https://stackoverflow.com/a/3207973/13279982
         files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
         return files
+
+    def __foldersInFolder(self, folder):
+        folders = [f for f in os.listdir(folder) if os.path.isdir(os.path.join(folder, f))]
+        return folders
     
     def __fileExistsInFolder(self, file, folder):
         return (file in folder)
@@ -92,3 +99,28 @@ class Downloader:
                     if (file[-3:] == 'zip'):  # if its actually a file
                         file_name = self.__getFilename(file)
                         self.__downloadFileIfNotExists(file, files_in_subfolder, self.__base_url + file, folder_name + '/' +  file_name, self.__base_url + file)
+    
+    def unzipFolders(self):
+        self.__createFolder(self.__xml_folder)  # create new xml folder
+        files = self.__filesInFolder(self.__resource_folder)
+        folders = self.__foldersInFolder(self.__resource_folder)
+
+        # basic zips
+        for file in files:
+            z = zipfile.ZipFile(self.__resource_folder + file).extractall(self.__xml_folder)
+            self.__verbosePrint("extracting file " + file)
+        
+        # additions
+        for folder in folders:
+            self.__createFolder(self.__xml_folder + folder)
+            folder_files = self.__filesInFolder(self.__resource_folder + folder)
+            for file in folder_files:
+                try:
+                    z = zipfile.ZipFile(self.__resource_folder + folder +'/' + file).extractall(self.__xml_folder + folder)
+                except:
+                    with gzip.open(self.__resource_folder + folder +'/' + file, 'rb') as f:
+                        file_content = f.read() 
+                        new_file = open(self.__xml_folder + folder + '/' + file[:-3] + "xml", "wb") # without hte .zip
+                        new_file.write(file_content)
+                self.__verbosePrint("extracting file " + file)
+

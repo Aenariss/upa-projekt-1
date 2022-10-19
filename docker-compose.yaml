@@ -1,0 +1,10 @@
+version: "3.2"
+services:
+ mongo-python:
+  build:
+    context: ${PWD}
+  volumes:
+  - $PWD/mongo-data:/data/db
+  - $PWD/mongo-app:/var/www/html
+  ports:
+  - "27017:27017"

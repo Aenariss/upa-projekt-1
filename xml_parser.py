@@ -1,25 +1,32 @@
 import os.path
 import sys
 import argparse
-from pathlib import Path
 import xmltodict
 from xml.parsers.expat import ExpatError
-import json
 from mongo import *
 import traceback
 
-collection = None
+collection_trains = None
+collection_canceled = None
+collection_changes = None
 
 
 def setup_db():
-    global collection
+    global collection_trains
+    global collection_canceled
+    global collection_changes
+
     # Get the database
     get_databases()
     # `app` is name of db, `trains` is name of collection
     create_collection("app", "trains")
+    create_collection("app", "canceled")
+    create_collection("app", "changes")
     # get_database `app` our database we dont need anything else imo
     dbname = get_database()
-    collection = dbname["trains"]
+    collection_trains = dbname["trains"]
+    collection_canceled = dbname["canceled"]
+    collection_changes = dbname["changes"]
 
 
 def create_arg_parser():
@@ -31,24 +38,24 @@ def create_arg_parser():
     return parser
 
 
-def process_json(obj: json):
-    # Showcase how to use insert https://www.w3schools.com/python/python_mongodb_insert.asp
-    # collection.insert_many([item_1,item_2])
-    collection.insert_many([obj])
-
-
 def parse_xml_dir(path: str = "./xmls"):
     xml_errors = []
     json_errors = []
-    print(f"parsing xml files")
     for root, dirs, files in os.walk(path):
+        print(root)
         for file in files:
-            # print(f"parsing: {file}")
             with open(os.path.join(root, file), "rb") as xml_file:
                 try:
                     data_dict = xmltodict.parse(xml_file.read())
                     try:
-                        collection.insert_one(data_dict)
+                        if root == "./xmls":
+                            collection_trains.insert_one(data_dict)
+                        else:
+
+                            if "cancel_" in xml_file.name:
+                                collection_canceled.insert_one(data_dict)
+                            else:
+                                collection_changes.insert_one(data_dict)
 
                     except TypeError as te:
                         traceback.print_exc()

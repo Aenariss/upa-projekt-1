@@ -61,7 +61,7 @@ def get_databases():
         # catch pymongo.errors.ServerSelectionTimeoutError
         print ("pymongo ERROR:", err)
 
-    print ("\ndatabases:", database_names)
+    print("\ndatabases:", database_names)
 
 def get_database():
     # use a try-except indentation to catch MongoClient() errors
@@ -86,7 +86,9 @@ if __name__ == "__main__":
    # Get the database
    get_databases()
    # `app` is name of db, `trains` is name of collection
-   create_collection("app","trains")
+   create_collection("app", "trains")
+   create_collection("app", "canceled")
+   create_collection("app", "changes")
    # get_database `app` our database we dont need anything else imo
    dbname = get_database()
    collection = dbname["trains"]

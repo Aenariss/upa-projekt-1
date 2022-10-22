@@ -22,8 +22,7 @@ def setup_db():
 
     # Get the database
     #get_databases()
-    client = MongoClient('mongodb://localhost:27017/')
-    db = client['test']
+    db = get_database()
 
     collection_trains = db["trains"]
     collection_trains.drop()

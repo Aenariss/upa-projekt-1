@@ -1,5 +1,7 @@
+import argparse
 from mongo import *
 from datetime import timedelta, datetime
+from dateutil import tz
 
 collection_trains = None
 collection_canceled = None
@@ -12,8 +14,7 @@ def setup_db():
     global collection_changes
     global collection_stations
 
-    client = MongoClient('mongodb://localhost:27017/')
-    db = client['test']
+    db = get_database()
     collection_trains = db["trains"]
     collection_canceled = db["canceled"]
     collection_changes = db["changes"]
@@ -58,9 +59,40 @@ def find_common(odkud, kam):
         result = []
     return result
 
+def iso_converter(day, month, year, time):
+    current_date = datetime.now()
+    if year == None:
+        year = current_date.year
+    if month == None:
+        month = current_date.month
+    if day == None:
+        day = current_date.day
+    if time == None:
+        time = current_date.time
+    hour = time[:-3]
+    min = time[3:]
+    zone = tz.gettz('Europe / Berlin') 
+    date = datetime(year=int(year),month=int(month),day=int(day),hour=int(hour),minute=int(min),tzinfo=zone)
+    return date.isoformat()
+
 if __name__ == '__main__':
     setup_db()
     print(trainCanceled('KT------694A', '2021-12-12T00:00:00'))
+
+# help, download (v), mongo, from, to, day, time
+parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
+parser.add_argument('--day', help='day of departure')
+parser.add_argument('--month', help='month of departure')
+parser.add_argument('--year', help='year of departure')
+parser.add_argument('--time', help='departure time, time format HH:MM')
+parser.add_argument('--from', help='which station you depart from')
+parser.add_argument('--to', help='your destination station')
+args = vars(parser.parse_args())
+
+try:
+  print(iso_converter(args["day"],args["month"],args["year"],args["time"]))
+except:
+  parser.print_help()
 
 # zruseni vlaku -- DONE
 # nahradni trasa -- IN PROGRESS

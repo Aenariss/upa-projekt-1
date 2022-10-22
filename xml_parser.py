@@ -38,6 +38,26 @@ def create_arg_parser():
     return parser
 
 
+def get_location_time(CZPTTLocation) -> None:
+    """
+    Adding integer value of time in each location as integer 1040 -> 10:40, 520 -> 5:20
+    this value is inserted into each CZPTTLocation
+    :param CZPTTLocation: CZPTTLocation dict
+    :return: None
+    """
+    for location in CZPTTLocation:
+        try:
+            timings = location["TimingAtLocation"]["Timing"]
+            if type(timings) is not list:
+                timings = [timings]
+            for t in timings:
+                hour = t["Time"][:2]
+                minute = t["Time"][3:5]
+                t["time_int"] = int(hour) * 100 + int(minute)
+        except KeyError as ke:  # some records don't have Timing
+            pass
+
+
 def parse_xml_dir(path: str = "./xmls"):
     xml_errors = []
     json_errors = []
@@ -49,6 +69,7 @@ def parse_xml_dir(path: str = "./xmls"):
                     data_dict = xmltodict.parse(xml_file.read())
                     try:
                         if root == "./xmls":
+                            get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
                             collection_trains.insert_one(data_dict)
                         else:
 

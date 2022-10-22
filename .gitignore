@@ -2,3 +2,4 @@ resources/
 xmls/
 /mongo-data
 /mongo-app
+__pycache__/

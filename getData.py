@@ -16,18 +16,13 @@ class Downloader:
         if not (os.path.exists(folder)):
             os.mkdir(folder)
 
-    def __args(self):
-        if len(argv) > 1:
-            return (argv[1] == '-v')
-        return 0
-
-    def __init__(self):
+    def __init__(self, verbose):
         self.__resource_folder = os.path.dirname(os.path.realpath(__file__)) + '/resources/'
         self.__xml_folder = os.path.dirname(os.path.realpath(__file__)) + '/xmls/'
         self.__url = 'https://portal.cisjr.cz/pub/draha/celostatni/szdc/2022/'
         self.__base_url = 'https://portal.cisjr.cz'
 
-        self.__verbose = self.__args()
+        self.__verbose = verbose
         self.__createFolder(self.__resource_folder)
     
     # function to download a page, takes an argument that specifies the url to download

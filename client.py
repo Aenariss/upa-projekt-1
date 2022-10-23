@@ -1,9 +1,11 @@
 import argparse
+from inspect import trace
 from mongo import *
 from datetime import timedelta, datetime
 from dateutil import tz
 from getData import Downloader
-from xml_parser import trainStopsInStation
+import traceback
+from xml_parser import trainStopsInStation, parse_xml_dir
 
 collection_trains = None
 collection_stations = None
@@ -95,11 +97,16 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
                 break
     return min_result
 def print_route(CZPTTCISMessage:dict, from_station, to_station):
+    
+    print(f"Route from {from_station} to {to_station} ")
+    print("-------------------------------")
     if CZPTTCISMessage is None:
         print("No route in selected day")
         return
+
     CZPTTLocation = CZPTTCISMessage["CZPTTInformation"]["CZPTTLocation"]
     print_out = False
+
     for location in CZPTTLocation:
         station = location["Location"]["PrimaryLocationName"]
         if station == from_station:
@@ -115,6 +122,7 @@ def print_route(CZPTTCISMessage:dict, from_station, to_station):
                         print(f'{timing["Time"][:8]} (GMT{timing["Time"][-6:]}) - {station}')
         if station == to_station:
             break
+    print("-------------------------------")
 
 def iso_converter(day, month, year, time):
     current_date = datetime.now()
@@ -145,48 +153,61 @@ if __name__ == '__main__':
         print_route(route, s_from, s_to)
         print("------------------")
 
-def tmp():
-    # help, download (v, --unzip), xml parser, from, to, day, time
-    parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
-    subs = parser.add_subparsers()
+# help, download (v, --unzip), xml parser, from, to, day, time
+parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
+subs = parser.add_subparsers()
 
-    download_parser = subs.add_parser('download')
-    download_parser.add_argument('-u', help='unzip downloaded files', action='store_true')
-    download_parser.add_argument('-v', help='verbose mode', action='store_true')
+download_parser = subs.add_parser('download')
+download_parser.add_argument('-u', help='unzip downloaded files. Files must be downloaded before this command.', action='store_true')
+download_parser.add_argument('-v', help='verbose mode', action='store_true')
 
-    client_parser = subs.add_parser('client')
-    client_parser.add_argument('--day', help='day of departure')
-    client_parser.add_argument('--month', help='month of departure')
-    client_parser.add_argument('--year', help='year of departure')
-    client_parser.add_argument('--time', help='departure time, time format HH:MM')
-    client_parser.add_argument('--from', help='which station you depart from')
-    client_parser.add_argument('--to', help='your destination station')
+client_parser = subs.add_parser('client')
+client_parser.add_argument('--day', help='day of departure')
+client_parser.add_argument('--month', help='month of departure')
+client_parser.add_argument('--year', help='year of departure')
+client_parser.add_argument('--time', help='departure time, time format HH:MM')
+client_parser.add_argument('--from', help='which station you depart from')
+client_parser.add_argument('--to', help='your destination station')
 
-    xml_parser = subs.add_parser('parser')
-    xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
-    args = vars(parser.parse_args())
+xml_parser = subs.add_parser('parser')
+xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
+args = vars(parser.parse_args())
 
-    if(len(args) == 6):
-        # client mode
-        try:
-            print(iso_converter(args["day"],args["month"],args["year"],args["time"]))
-        except:
-            parser.print_help()
+if(len(args) == 6):
+    # client mode
+    try:
+        date = iso_converter(args["day"], args["month"], args["year"], args["time"])
+        from_station = args["from"]
+        to_station = args["to"]
 
-    if(len(args)== 2):
-        # downloader mode
-        try:
-            downloader = Downloader()
+        trains = find_common(from_station, to_station)
+        try: 
+            dt = datetime.fromisoformat(date + "+00:00")
+            route = get_route(trains, from_station, to_station, dt)
+            print_route(route, from_station, to_station)
+
+        except Exception as e:
+            traceback.print_exc() 
+
+    except:
+        parser.print_help()
+
+if(len(args)== 2):
+    # downloader mode
+    try:
+        verbose = args['v']
+        downloader = Downloader(verbose)
+        if args["u"] == True:
+            downloader.unzipFolders()
+        else:
             downloader.getFiles()
-            if args["u"] == True:
-                downloader.unzipFolders()
-        except:
-            parser.print_help()
+    except:
+        parser.print_help()
 
-    if(len(args)== 1):
-        # xml parser mode
-        try:
-            setup_db()
-            #tmp_push()
-        except:
-            parser.print_help()
+if(len(args)== 1):
+    # xml parser mode
+    try:
+        setup_db()
+        parse_xml_dir()
+    except:
+        parser.print_help()

@@ -82,7 +82,8 @@ class Downloader:
             folder = folder.decode('utf-8')
             # it's not a folder, its a file
             if (folder[-3:] == 'zip'):
-                self.__downloadFileIfNotExists(folder, files_in_folder, self.__base_url + folder, self.__resource_folder + file, self.__resource_folder + file)
+                file_name = self.__getFilename(folder)
+                self.__downloadFileIfNotExists(folder, files_in_folder, self.__base_url + folder, self.__resource_folder + file_name, self.__resource_folder + file_name)
             
             # its an actual folder
             else:
@@ -107,6 +108,8 @@ class Downloader:
 
         # basic zips
         for file in files:
+            if "oprava_poznamek" in file:
+                continue
             z = zipfile.ZipFile(self.__resource_folder + file).extractall(self.__xml_folder)
             self.__verbosePrint("extracting file " + file)
         
@@ -120,7 +123,6 @@ class Downloader:
                 except:
                     with gzip.open(self.__resource_folder + folder +'/' + file, 'rb') as f:
                         file_content = f.read() 
-                        new_file = open(self.__xml_folder + folder + '/' + file[:-3] + "xml", "wb") # without hte .zip
+                        new_file = open(self.__xml_folder + folder + '/' + file[:-4], "wb") # without hte .zip
                         new_file.write(file_content)
                 self.__verbosePrint("extracting file " + file)
-

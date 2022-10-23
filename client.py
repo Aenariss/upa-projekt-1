@@ -3,48 +3,18 @@ from mongo import *
 from datetime import timedelta, datetime
 from dateutil import tz
 from getData import Downloader
-from xml_parser import *
+from xml_parser import trainStopsInStation
 
 collection_trains = None
-collection_canceled = None
-collection_changes = None
 collection_stations = None
 
 def setup_db():
     global collection_trains
-    global collection_canceled
-    global collection_changes
     global collection_stations
 
     db = get_database()
     collection_trains = db["trains"]
-    collection_canceled = db["canceled"]
-    collection_changes = db["changes"]
     collection_stations = db["stations"]
-
-def trainCanceled(id, date):
-    # get = collection_canceled.find_one({"_id":id}) # the same as below, keep just in case
-    get = collection_canceled.find_one(id)  # if it wasnt found, we get None type
-    if get: # if a train was cancelled, check if the day was also
-        # start date
-        start_date = get['CZCanceledPTTMessage']['PlannedCalendar']['ValidityPeriod']['StartDateTime']
-        end_date = get['CZCanceledPTTMessage']['PlannedCalendar']['ValidityPeriod']['EndDateTime']
-        if start_date and end_date:
-            d1 = datetime.fromisoformat(start_date)
-            d2 = datetime.fromisoformat(end_date) + timedelta(days=1) - timedelta(seconds=1)  # end date is the day when it ends, aka the last day of the cancelation, so add + 1 dat to this and subtract 1 second
-            date = datetime.fromisoformat(date)
-
-            # time makes sense, jut a check (they would NOT cancel it so that the cancellation ends before it begins... surely not...)
-            if (d1 <= date <= d2):
-                index = (date-d1).days
-                try:
-                    bitDay = get['CZCanceledPTTMessage']['PlannedCalendar']['BitmapDays'][index]
-                    return bitDay == '1'  # returns 1 if canceled, 0 if not
-                # If the bit day is not set or something is broken in some other way, lets suppose the train runs
-                except:
-                    return False
-            else:
-                return False
 
 def find_common(odkud, kam):
     # spolecne vlaky pro odkud a kam
@@ -65,11 +35,6 @@ def exist_changed_plan(train, from_station, to_station, dt)-> dict:
     ...
 
 def get_route(trains:list, from_station, to_station, dt:datetime):
-    for train in trains:
-        if trainCanceled(train, dt.isoformat()):
-            if exist_changed_plan(train, from_station, to_station, dt):
-                ...
-            trains.remove(train)
 
     hour = dt.hour
     minute = dt.minute
@@ -108,11 +73,11 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
         index = (dt - d1).days
         try:
             bitDay = day_bitmap[index]
-            if bitDay == "0":  # returns 1 if canceled, 0 if not
-                break
-        # If the bit day is not set or something is broken in some other way, lets suppose the train runs
+            if bitDay == "0":  # if its cancelled that day, try another one
+                continue
+        # If the bit day is not set or something is broken in some other way, continue
         except:
-            break
+            continue
 
         for location in CZPTTLocation:
             station = location["Location"]["PrimaryLocationName"]
@@ -169,63 +134,59 @@ def iso_converter(day, month, year, time):
 
 if __name__ == '__main__':
     setup_db()
-    s_from = "Slaný předměstí"
-    s_to = "Chlumčany u Loun"
-    for i in range(10, 30):
-        date_str = f"2022-05-{i}T00:00:00.000-00:00"
+    s_from = "Úholičky"
+    s_to = "Roztoky-Žalov"
+    for i in range(21, 22):
+        date_str = f"2022-10-{i}T07:00:00.000-00:00"
 
-        #trains = find_common(s_from, s_to)
-        trains = ["KT----10208A"]
+        trains = find_common(s_from, s_to)
         dt = datetime.fromisoformat(date_str)
         route = get_route(trains, s_from, s_to, dt)
         print_route(route, s_from, s_to)
         print("------------------")
 
+def tmp():
+    # help, download (v, --unzip), xml parser, from, to, day, time
+    parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
+    subs = parser.add_subparsers()
 
-# help, download (v, --unzip), xml parser, from, to, day, time
-parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
-subs = parser.add_subparsers()
+    download_parser = subs.add_parser('download')
+    download_parser.add_argument('-u', help='unzip downloaded files', action='store_true')
+    download_parser.add_argument('-v', help='verbose mode', action='store_true')
 
-download_parser = subs.add_parser('download')
-download_parser.add_argument('-u', help='unzip downloaded files', action='store_true')
-download_parser.add_argument('-v', help='verbose mode', action='store_true')
+    client_parser = subs.add_parser('client')
+    client_parser.add_argument('--day', help='day of departure')
+    client_parser.add_argument('--month', help='month of departure')
+    client_parser.add_argument('--year', help='year of departure')
+    client_parser.add_argument('--time', help='departure time, time format HH:MM')
+    client_parser.add_argument('--from', help='which station you depart from')
+    client_parser.add_argument('--to', help='your destination station')
 
-client_parser = subs.add_parser('client')
-client_parser.add_argument('--day', help='day of departure')
-client_parser.add_argument('--month', help='month of departure')
-client_parser.add_argument('--year', help='year of departure')
-client_parser.add_argument('--time', help='departure time, time format HH:MM')
-client_parser.add_argument('--from', help='which station you depart from')
-client_parser.add_argument('--to', help='your destination station')
+    xml_parser = subs.add_parser('parser')
+    xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
+    args = vars(parser.parse_args())
 
-xml_parser = subs.add_parser('parser')
-xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
-args = vars(parser.parse_args())
+    if(len(args) == 6):
+        # client mode
+        try:
+            print(iso_converter(args["day"],args["month"],args["year"],args["time"]))
+        except:
+            parser.print_help()
 
-if(len(args) == 6):
-    # client mode
-    try:
-        print(iso_converter(args["day"],args["month"],args["year"],args["time"]))
-    except:
-        parser.print_help()
+    if(len(args)== 2):
+        # downloader mode
+        try:
+            downloader = Downloader()
+            downloader.getFiles()
+            if args["u"] == True:
+                downloader.unzipFolders()
+        except:
+            parser.print_help()
 
-if(len(args)== 2):
-    # downloader mode
-    try:
-        downloader = Downloader()
-        downloader.getFiles()
-        if args["u"] == True:
-            downloader.unzipFolders()
-    except:
-        parser.print_help()
-
-if(len(args)== 1):
-    # xml parser mode
-    try:
-        setup_db()
-        #tmp_push()
-    except:
-        parser.print_help()
-
-# zruseni vlaku -- DONE
-# nahradni trasa -- IN PROGRESS
+    if(len(args)== 1):
+        # xml parser mode
+        try:
+            setup_db()
+            #tmp_push()
+        except:
+            parser.print_help()

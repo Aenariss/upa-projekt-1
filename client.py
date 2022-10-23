@@ -1,4 +1,5 @@
 import argparse
+from inspect import trace
 from mongo import *
 from datetime import timedelta, datetime
 from dateutil import tz
@@ -101,18 +102,6 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
     min_result = None
     for result in query_result:
         CZPTTLocation = result["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"]
-        calendar = result["CZPTTCISMessage"]["CZPTTInformation"]["PlannedCalendar"]
-        day_bitmap = calendar["BitmapDays"]
-        date_start = calendar["ValidityPeriod"]["StartDateTime"] + "-00:00"
-        d1 = datetime.fromisoformat(date_start)
-        index = (dt - d1).days
-        try:
-            bitDay = day_bitmap[index]
-            if bitDay == "0":  # returns 1 if canceled, 0 if not
-                break
-        # If the bit day is not set or something is broken in some other way, lets suppose the train runs
-        except:
-            break
 
         for location in CZPTTLocation:
             station = location["Location"]["PrimaryLocationName"]
@@ -130,11 +119,16 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
                 break
     return min_result
 def print_route(CZPTTCISMessage:dict, from_station, to_station):
+    
+    print(f"Route from {from_station} to {to_station} ")
+    print("-------------------------------")
     if CZPTTCISMessage is None:
         print("No route in selected day")
         return
+
     CZPTTLocation = CZPTTCISMessage["CZPTTInformation"]["CZPTTLocation"]
     print_out = False
+
     for location in CZPTTLocation:
         station = location["Location"]["PrimaryLocationName"]
         if station == from_station:
@@ -150,6 +144,7 @@ def print_route(CZPTTCISMessage:dict, from_station, to_station):
                         print(f'{timing["Time"][:8]} (GMT{timing["Time"][-6:]}) - {station}')
         if station == to_station:
             break
+    print("-------------------------------")
 
 def iso_converter(day, month, year, time):
     current_date = datetime.now()
@@ -169,19 +164,6 @@ def iso_converter(day, month, year, time):
 
 if __name__ == '__main__':
     setup_db()
-    s_from = "Slaný předměstí"
-    s_to = "Chlumčany u Loun"
-    for i in range(10, 30):
-        date_str = f"2022-05-{i}T00:00:00.000-00:00"
-
-        #trains = find_common(s_from, s_to)
-        trains = ["KT----10208A"]
-        dt = datetime.fromisoformat(date_str)
-        route = get_route(trains, s_from, s_to, dt)
-        print_route(route, s_from, s_to)
-        print("------------------")
-
-
 # help, download (v, --unzip), xml parser, from, to, day, time
 parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
 subs = parser.add_subparsers()
@@ -205,7 +187,19 @@ args = vars(parser.parse_args())
 if(len(args) == 6):
     # client mode
     try:
-        print(iso_converter(args["day"],args["month"],args["year"],args["time"]))
+        date = iso_converter(args["day"], args["month"], args["year"], args["time"])
+        from_station = args["from"]
+        to_station = args["to"]
+
+        trains = find_common(from_station, to_station)
+        try: 
+            dt = datetime.fromisoformat(date + "+00:00")
+            route = get_route(trains, from_station, to_station, dt)
+            print_route(route, from_station, to_station)
+
+        except Exception as e:
+            traceback.print_exc() 
+
     except:
         parser.print_help()
 

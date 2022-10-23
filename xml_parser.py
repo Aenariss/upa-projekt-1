@@ -22,18 +22,18 @@ def setup_db():
 
     # Get the database
     #get_databases()
-    client = MongoClient('mongodb://localhost:27017/')
-    db = client['test']
+    # client = get_client()
+    db = get_database()
 
     collection_trains = db["trains"]
-    collection_trains.drop()
+    # collection_trains.drop()
     collection_canceled = db["canceled"]
-    collection_canceled.drop()
+    # collection_canceled.drop()
     collection_changes = db["changes"]
-    collection_changes.drop()
+    # collection_changes.drop()
 
     collection_stations = db["stations"]
-    collection_stations.drop()
+    # collection_stations.drop()
 
     # u changed ziskavat ID pres core RelatedPlannedTransportIdentifiers, tim ziskam odkaz rovnou na origo a z origa muzu hned jet tu k tomu... snad jsou unique
 

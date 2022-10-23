@@ -1,5 +1,7 @@
 from mongo import *
 from datetime import timedelta, datetime
+from mongo import *
+from xml_parser import trainStopsInStation
 
 collection_trains = None
 collection_canceled = None
@@ -12,8 +14,8 @@ def setup_db():
     global collection_changes
     global collection_stations
 
-    client = MongoClient('mongodb://localhost:27017/')
-    db = client['test']
+    #client = get_client()
+    db = get_database()
     collection_trains = db["trains"]
     collection_canceled = db["canceled"]
     collection_changes = db["changes"]
@@ -36,7 +38,7 @@ def trainCanceled(id, date):
                 index = (date-d1).days
                 try:
                     bitDay = get['CZCanceledPTTMessage']['PlannedCalendar']['BitmapDays'][index]
-                    return bool(bitDay)  # returns 1 if canceled, 0 if not
+                    return bitDay == '1'  # returns 1 if canceled, 0 if not
                 # If the bit day is not set or something is broken in some other way, lets suppose the train runs
                 except:
                     return False

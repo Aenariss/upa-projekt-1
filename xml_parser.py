@@ -6,6 +6,7 @@ import xmltodict
 from xml.parsers.expat import ExpatError
 from mongo import *
 import traceback
+from datetime import datetime
 
 collection_trains = None
 collection_canceled = None
@@ -80,6 +81,7 @@ def parse_xml_dir(path: str = "./xmls"):
                         if root == "./xmls":
                             get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
                             collection_trains.insert_one(data_dict)
+
                         else:
 
                             if "cancel_" in xml_file.name:
@@ -164,8 +166,70 @@ def tmp_push():
     collection_canceled.insert_one(data_dict_cancel_2)
     collection_trains.insert_one(data_dict)
 
-if __name__ == "__main__":
+def get_valid_route(from_station, to_station, hour, minute) -> dict:
+    time_int = int(hour)*100 + int(minute)
+    aggregate_query = [
+    {
+        '$match': {
+            'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{from_station}'
+        }
+    }, {
+        '$match': {
+            'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{to_station}'
+        }
+    }, {
+        '$match': {
+            '$and': [
+                {
+                    'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{from_station}'
+                },
+                {
+                    'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.TimingAtLocation.Timing.time_int': {
+                        '$gte': time_int
+                    }
+                }
+            ]
+        }
+    }
+]
+    query_result = collection_trains.aggregate(aggregate_query)
+    for result in query_result:
+        message = result['CZPTTCISMessage']
+        CZPTTLocation = message["CZPTTInformation"]["CZPTTLocation"]
+        for location in CZPTTLocation:
+            station = location["Location"]["PrimaryLocationName"]
+            if station == to_station:
+                break
+            if station == from_station:
+                return message
 
+    return {}
+
+
+
+def time_to_int(hours, minutes):
+    return int(hours)*100 + int(minutes)
+
+
+def print_route(CZPTTCISMessage:dict, from_station, to_station):
+    CZPTTLocation = CZPTTCISMessage["CZPTTInformation"]["CZPTTLocation"]
+    print_out = False
+    for location in CZPTTLocation:
+        station = location["Location"]["PrimaryLocationName"]
+        if station == from_station:
+            print_out = True
+        if print_out:
+            timings = location["TimingAtLocation"]["Timing"]
+            if type(timings) is not list:
+                timings = [timings]
+            for timing in timings:
+                if timing["TimingQualifierCode"] == "ALD":
+                    print(f'{timing["Time"]} - {station}')
+        if station == to_station:
+            break
+
+
+if __name__ == "__main__":
     arg_parser = create_arg_parser()
     #parsed_args = arg_parser.parse_args(sys.argv[1:])
     #if not os.path.exists(parsed_args.inputDirectory):
@@ -174,3 +238,5 @@ if __name__ == "__main__":
     setup_db()
     #parse_xml_dir(parsed_args.inputDirectory)
     tmp_push()
+
+    """

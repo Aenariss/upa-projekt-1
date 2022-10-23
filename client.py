@@ -169,7 +169,7 @@ parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
 subs = parser.add_subparsers()
 
 download_parser = subs.add_parser('download')
-download_parser.add_argument('-u', help='unzip downloaded files', action='store_true')
+download_parser.add_argument('-u', help='unzip downloaded files. Files must be downloaded before this command.', action='store_true')
 download_parser.add_argument('-v', help='verbose mode', action='store_true')
 
 client_parser = subs.add_parser('client')
@@ -207,9 +207,10 @@ if(len(args)== 2):
     # downloader mode
     try:
         downloader = Downloader()
-        downloader.getFiles()
         if args["u"] == True:
             downloader.unzipFolders()
+        else:
+            downloader.getFiles()
     except:
         parser.print_help()
 
@@ -217,7 +218,7 @@ if(len(args)== 1):
     # xml parser mode
     try:
         setup_db()
-        #tmp_push()
+        parse_xml_dir()
     except:
         parser.print_help()
 

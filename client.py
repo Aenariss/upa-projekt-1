@@ -1,7 +1,9 @@
+import argparse
 from mongo import *
 from datetime import timedelta, datetime
-from mongo import *
-from xml_parser import trainStopsInStation
+from dateutil import tz
+from getData import Downloader
+from xml_parser import *
 
 collection_trains = None
 collection_canceled = None
@@ -14,7 +16,6 @@ def setup_db():
     global collection_changes
     global collection_stations
 
-    #client = get_client()
     db = get_database()
     collection_trains = db["trains"]
     collection_canceled = db["canceled"]
@@ -150,6 +151,21 @@ def print_route(CZPTTCISMessage:dict, from_station, to_station):
         if station == to_station:
             break
 
+def iso_converter(day, month, year, time):
+    current_date = datetime.now()
+    if year == None:
+        year = current_date.year
+    if month == None:
+        month = current_date.month
+    if day == None:
+        day = current_date.day
+    if time == None:
+        time = current_date.time
+    hour = time[:-3]
+    min = time[3:]
+    zone = tz.gettz('Europe / Berlin') 
+    date = datetime(year=int(year),month=int(month),day=int(day),hour=int(hour),minute=int(min),tzinfo=zone)
+    return date.isoformat()
 
 if __name__ == '__main__':
     setup_db()
@@ -165,6 +181,51 @@ if __name__ == '__main__':
         print_route(route, s_from, s_to)
         print("------------------")
 
+
+# help, download (v, --unzip), xml parser, from, to, day, time
+parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
+subs = parser.add_subparsers()
+
+download_parser = subs.add_parser('download')
+download_parser.add_argument('-u', help='unzip downloaded files', action='store_true')
+download_parser.add_argument('-v', help='verbose mode', action='store_true')
+
+client_parser = subs.add_parser('client')
+client_parser.add_argument('--day', help='day of departure')
+client_parser.add_argument('--month', help='month of departure')
+client_parser.add_argument('--year', help='year of departure')
+client_parser.add_argument('--time', help='departure time, time format HH:MM')
+client_parser.add_argument('--from', help='which station you depart from')
+client_parser.add_argument('--to', help='your destination station')
+
+xml_parser = subs.add_parser('parser')
+xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
+args = vars(parser.parse_args())
+
+if(len(args) == 6):
+    # client mode
+    try:
+        print(iso_converter(args["day"],args["month"],args["year"],args["time"]))
+    except:
+        parser.print_help()
+
+if(len(args)== 2):
+    # downloader mode
+    try:
+        downloader = Downloader()
+        downloader.getFiles()
+        if args["u"] == True:
+            downloader.unzipFolders()
+    except:
+        parser.print_help()
+
+if(len(args)== 1):
+    # xml parser mode
+    try:
+        setup_db()
+        #tmp_push()
+    except:
+        parser.print_help()
 
 # zruseni vlaku -- DONE
 # nahradni trasa -- IN PROGRESS

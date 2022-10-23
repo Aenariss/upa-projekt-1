@@ -22,8 +22,6 @@ def setup_db():
 
 
     # Get the database
-    #get_databases()
-    # client = get_client()
     db = get_database()
 
     collection_trains = db["trains"]

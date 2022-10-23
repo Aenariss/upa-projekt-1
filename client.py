@@ -219,8 +219,8 @@ if(len(args)== 1):
     try:
         setup_db()
         parse_xml_dir()
-    except Exception as e:
-            traceback.print_exc() 
+    except:
+        parser.print_help()
 
 # zruseni vlaku -- DONE
 # nahradni trasa -- IN PROGRESS

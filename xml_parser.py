@@ -23,18 +23,18 @@ def setup_db():
 
     # Get the database
     #get_databases()
-    client = MongoClient('mongodb://localhost:27017/')
-    db = client['test']
+    # client = get_client()
+    db = get_database()
 
     collection_trains = db["trains"]
-    collection_trains.drop()
+    # collection_trains.drop()
     collection_canceled = db["canceled"]
-    collection_canceled.drop()
+    # collection_canceled.drop()
     collection_changes = db["changes"]
-    collection_changes.drop()
+    # collection_changes.drop()
 
     collection_stations = db["stations"]
-    collection_stations.drop()
+    # collection_stations.drop()
 
     # u changed ziskavat ID pres core RelatedPlannedTransportIdentifiers, tim ziskam odkaz rovnou na origo a z origa muzu hned jet tu k tomu... snad jsou unique
 
@@ -47,6 +47,26 @@ def create_arg_parser():
                         help='Path to the input directory.')
     return parser
 
+def get_location_time(CZPTTLocation) -> None:
+    """
+    Adding integer value of time in each location as integer 1040 -> 10:40, 520 -> 5:20
+    this value is inserted into each CZPTTLocation
+    :param CZPTTLocation: CZPTTLocation dict
+    :return: None
+    """
+    for location in CZPTTLocation:
+        try:
+            timings = location["TimingAtLocation"]["Timing"]
+            if type(timings) is not list:
+                timings = [timings]
+            for t in timings:
+                hour = t["Time"][:2]
+                minute = t["Time"][3:5]
+                time = int(hour) * 100 + int(minute)
+                t["time_int"] = time
+
+        except KeyError as ke:  # some records don't have Timing
+            pass
 
 def get_location_time(CZPTTLocation) -> None:
     """
@@ -79,7 +99,11 @@ def parse_xml_dir(path: str = "./xmls"):
                     data_dict = xmltodict.parse(xml_file.read())
                     try:
                         if root == "./xmls":
+                            id = getID(data_dict)  # always save core PA
+                            id_dict = {"_id": id}
+                            data_dict = {**id_dict, **data_dict}
                             get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
+                            location_collection(data_dict)
                             collection_trains.insert_one(data_dict)
 
                         else:
@@ -87,7 +111,12 @@ def parse_xml_dir(path: str = "./xmls"):
                             if "cancel_" in xml_file.name:
                                 collection_canceled.insert_one(data_dict)
                             else:
-                                collection_changes.insert_one(data_dict)
+                                try:
+                                    #data_dict["_id"] = getID(data_dict)
+                                    data_dict["original_train"] = getIDReplaced(data_dict)
+                                    collection_changes.insert_one(data_dict)
+                                except KeyError as ke:
+                                    pass
 
                     except TypeError as te:
                         traceback.print_exc()
@@ -105,6 +134,15 @@ def getID(xml):
     except:
         pass
     return id
+
+def getIDReplaced(xml):
+    id = None
+    try:
+        id = xml['CZPTTCISMessage']['Identifiers']['RelatedPlannedTransportIdentifiers']['Core']
+        return id
+    except KeyError as ke:
+        return getID(xml)
+
 
 def canceledMessageId(orig_msg):
     id = None
@@ -238,5 +276,3 @@ if __name__ == "__main__":
     setup_db()
     #parse_xml_dir(parsed_args.inputDirectory)
     tmp_push()
-
-    """

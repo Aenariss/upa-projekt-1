@@ -183,12 +183,11 @@ def tmp_push():
     collection_trains.insert_one(data_dict)
 
 if __name__ == "__main__":
-
     arg_parser = create_arg_parser()
-    #parsed_args = arg_parser.parse_args(sys.argv[1:])
-    #if not os.path.exists(parsed_args.inputDirectory):
-    #    print("Directory not exists")
-    #    sys.exit(1)
+    parsed_args = arg_parser.parse_args(sys.argv[1:])
+    if not os.path.exists(parsed_args.inputDirectory):
+        print("Directory not exists")
+        sys.exit(1)
     setup_db()
-    #parse_xml_dir(parsed_args.inputDirectory)
-    tmp_push()
+    parse_xml_dir("./xmls_replace")
+    #tmp_push()

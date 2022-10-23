@@ -164,25 +164,25 @@ def iso_converter(day, month, year, time):
 
 if __name__ == '__main__':
     setup_db()
-# help, download (v, --unzip), xml parser, from, to, day, time
-parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
-subs = parser.add_subparsers()
+    # help, download (v, --unzip), xml parser, from, to, day, time
+    parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
+    subs = parser.add_subparsers()
 
-download_parser = subs.add_parser('download')
-download_parser.add_argument('-u', help='unzip downloaded files', action='store_true')
-download_parser.add_argument('-v', help='verbose mode', action='store_true')
+    download_parser = subs.add_parser('download')
+    download_parser.add_argument('-u', help='unzip downloaded files. Files must be downloaded before this command.', action='store_true')
+    download_parser.add_argument('-v', help='verbose mode', action='store_true')
 
-client_parser = subs.add_parser('client')
-client_parser.add_argument('--day', help='day of departure')
-client_parser.add_argument('--month', help='month of departure')
-client_parser.add_argument('--year', help='year of departure')
-client_parser.add_argument('--time', help='departure time, time format HH:MM')
-client_parser.add_argument('--from', help='which station you depart from')
-client_parser.add_argument('--to', help='your destination station')
+    client_parser = subs.add_parser('client')
+    client_parser.add_argument('--day', help='day of departure')
+    client_parser.add_argument('--month', help='month of departure')
+    client_parser.add_argument('--year', help='year of departure')
+    client_parser.add_argument('--time', help='departure time, time format HH:MM')
+    client_parser.add_argument('--from', help='which station you depart from')
+    client_parser.add_argument('--to', help='your destination station')
 
-xml_parser = subs.add_parser('parser')
-xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
-args = vars(parser.parse_args())
+    xml_parser = subs.add_parser('parser')
+    xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
+    args = vars(parser.parse_args())
 
 if(len(args) == 6):
     # client mode
@@ -207,9 +207,10 @@ if(len(args)== 2):
     # downloader mode
     try:
         downloader = Downloader()
-        downloader.getFiles()
         if args["u"] == True:
             downloader.unzipFolders()
+        else:
+            downloader.getFiles()
     except:
         parser.print_help()
 
@@ -217,9 +218,9 @@ if(len(args)== 1):
     # xml parser mode
     try:
         setup_db()
-        #tmp_push()
-    except:
-        parser.print_help()
+        parse_xml_dir()
+    except Exception as e:
+            traceback.print_exc() 
 
 # zruseni vlaku -- DONE
 # nahradni trasa -- IN PROGRESS

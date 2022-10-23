@@ -1,7 +1,4 @@
 import os.path
-import argparse
-import sys
-from tracemalloc import start
 import xmltodict
 from xml.parsers.expat import ExpatError
 from mongo import *
@@ -10,7 +7,6 @@ from datetime import datetime, timedelta
 
 collection_trains = None
 collection_stations = None
-
 
 def setup_db():
     global collection_trains
@@ -22,14 +18,6 @@ def setup_db():
 
     collection_trains = db["trains"]
     collection_stations = db["stations"]
-
-def create_arg_parser():
-    # Creates and returns the ArgumentParser object
-
-    parser = argparse.ArgumentParser(description='UPA project xml parser')
-    parser.add_argument('inputDirectory',
-                        help='Path to the input directory.')
-    return parser
 
 def get_location_time(CZPTTLocation) -> None:
     """
@@ -52,7 +40,7 @@ def get_location_time(CZPTTLocation) -> None:
         except KeyError as ke:  # some records don't have Timing
             pass
 
-def parse_xml_dir(path: str = "./xmls"):
+def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
     xml_errors = []
     json_errors = []
     for root, dirs, files in os.walk(path):
@@ -67,7 +55,7 @@ def parse_xml_dir(path: str = "./xmls"):
                             id = getID(data_dict)  # always save core PA
                             data_dict['_id'] = id
                             get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
-                            location_collection(data_dict)
+                            location_collection(data_dict, collection_stations)
                             collection_trains.replace_one({'_id':id}, data_dict, upsert=True)
 
                         else:
@@ -105,12 +93,12 @@ def parse_xml_dir(path: str = "./xmls"):
                                             collection_trains.replace_one({'_id':orig_train_id}, orig_train, upsert=True)
                                     
                                     get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
-                                    location_collection(data_dict)
+                                    location_collection(data_dict, collection_stations)
                                     collection_trains.replace_one({'_id':id}, data_dict, upsert=True)
 
                                 else:   # this is an original train, so act like it
                                     get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
-                                    location_collection(data_dict)
+                                    location_collection(data_dict, collection_stations)
                                     collection_trains.replace_one({'_id':id}, data_dict, upsert=True)
 
                     except TypeError as te:
@@ -198,7 +186,7 @@ def trainStopsInStation(location):
         return 0    # train doesnt stop here
     return 1
 
-def location_collection(data_dict):
+def location_collection(data_dict, collection_stations):
     id = getID(data_dict) # always save core PA
     stations = data_dict['CZPTTCISMessage']['CZPTTInformation']['CZPTTLocation']
     for location in stations:
@@ -213,64 +201,9 @@ def location_collection(data_dict):
             locations.append(id)
             collection_stations.replace_one({'_id':location}, {"_id":location, 'pa':locations}, upsert=True)
 
-def tmp_push():
-    xml_file = open('./xmls/PA_0054_KT------694A_00_2022.xml', 'rb')
-    xml_file_cancel = open('./xmls/2021-12/cancel_PA_0054_KT------694A_00_2022_20211212.xml.xml', 'rb')
-    data_dict = xmltodict.parse(xml_file.read())
-    data_dict_cancel = xmltodict.parse(xml_file_cancel.read())
-
-    location_collection(data_dict)
-
-    # kdyz existuje cancel message, ziskat ID a vymaskovat bitmap days tak, at tam, kde je v origo 1 a v canceled 0, je 0
-    # kdyz existuje nahradni, tak najit origo a tu celou cast nahradit 0 a nahrat tohle mezi normalni rady
-    data_dict['_id'] = getID(data_dict)
-    collection_trains.insert_one(data_dict)
-    data_dict_cancel = canceledMessageParse(data_dict_cancel)
-
-def get_valid_route(from_station, to_station, hour, minute) -> dict:
-    time_int = int(hour)*100 + int(minute)
-    aggregate_query = [
-    {
-        '$match': {
-            'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{from_station}'
-        }
-    }, {
-        '$match': {
-            'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{to_station}'
-        }
-    }, {
-        '$match': {
-            '$and': [
-                {
-                    'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{from_station}'
-                },
-                {
-                    'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.TimingAtLocation.Timing.time_int': {
-                        '$gte': time_int
-                    }
-                }
-            ]
-        }
-    }
-]
-    query_result = collection_trains.aggregate(aggregate_query)
-    for result in query_result:
-        message = result['CZPTTCISMessage']
-        CZPTTLocation = message["CZPTTInformation"]["CZPTTLocation"]
-        for location in CZPTTLocation:
-            station = location["Location"]["PrimaryLocationName"]
-            if station == to_station:
-                break
-            if station == from_station:
-                return message
-
-    return {}
-
 def time_to_int(hours, minutes):
     return int(hours)*100 + int(minutes)
 
 if __name__ == "__main__":
-    arg_parser = create_arg_parser()
     setup_db()
-    parse_xml_dir()
-    #tmp_push()
+    parse_xml_dir(collection_trains, collection_stations)

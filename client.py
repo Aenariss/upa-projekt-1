@@ -142,17 +142,7 @@ def iso_converter(day, month, year, time):
 
 if __name__ == '__main__':
     setup_db()
-    s_from = "Úholičky"
-    s_to = "Roztoky-Žalov"
-    for i in range(21, 22):
-        date_str = f"2022-10-{i}T07:00:00.000-00:00"
-
-        trains = find_common(s_from, s_to)
-        dt = datetime.fromisoformat(date_str)
-        route = get_route(trains, s_from, s_to, dt)
-        print_route(route, s_from, s_to)
-        print("------------------")
-        
+    
     # help, download (v, --unzip), xml parser, from, to, day, time
     parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
     subs = parser.add_subparsers()
@@ -207,7 +197,6 @@ if __name__ == '__main__':
     if(len(args)== 1):
         # xml parser mode
         try:
-            setup_db()
-            parse_xml_dir()
+            parse_xml_dir(collection_trains, collection_stations)
         except:
             parser.print_help()

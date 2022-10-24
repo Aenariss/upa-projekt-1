@@ -75,19 +75,18 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
         print(f"parsing {directory}")
         for filename in os.listdir(directory):
             file_path = os.path.join(directory, filename)
-            with open(file_path, "rb") as xml_file:
-                try:
-                    if "cancel_" in xml_file.name:
+            if "cancel_" not in file_path:
+                change_files.append(file_path)
+            else:
+                with open(file_path, "rb") as xml_file:
+                    try:
                         canceled_num += 1
                         data_dict = xmltodict.parse(xml_file.read())
                         canceledMessageParse(data_dict, collection_trains)
                         # print('ok')
-                    else:  # replacement trains
-                        change_files.append(file_path)
-
-                except TypeError as te:
-                    traceback.print_exc()
-                    json_errors.append(filename)
+                    except TypeError as te:
+                        traceback.print_exc()
+                        json_errors.append(filename)
 
     print(f"parsing {len(change_files)} files with change")
     for file_path in change_files:

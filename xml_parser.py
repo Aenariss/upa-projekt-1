@@ -44,6 +44,8 @@ def get_location_time(CZPTTLocation) -> None:
 def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
     xml_errors = []
     json_errors = []
+    root_files = 0
+    non_root_files = 0
     for root, dirs, files in os.walk(path):
         for file in files:
             print(file)
@@ -51,16 +53,10 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
                 try:
                     data_dict = xmltodict.parse(xml_file.read())
                     try:
-                        root_flag = True
-                        x = re.search('.*(xmls.*)$', root)
-                        try:
-                            x = x.group(1)
-                            if len(x) > 4+1:    # xmls/ is 5
-                                root_flag = False
-                        except:
-                            print("Invalid root directory")
-                            return
+                        root_flag = (root[:7] != "./xmls/")
+
                         if root_flag:
+                            root_files += 1
                             id = getID(data_dict)  # always save core PA
                             data_dict['_id'] = id
                             get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
@@ -68,6 +64,7 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
                             collection_trains.replace_one({'_id':id}, data_dict, upsert=True)
 
                         else:
+                            non_root_files += 1
                             if "cancel_" in xml_file.name:
                                 canceledMessageParse(data_dict, collection_trains)
                             else:   # replacement trains
@@ -90,17 +87,17 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
 
                                         if start_date and end_date:
                                             d1 = datetime.fromisoformat(start_date)
-                                            d2 = datetime.fromisoformat(end_date) 
+                                            d2 = datetime.fromisoformat(end_date)
                                             bit_changing_length = (d2-d1 + timedelta(days=1)).days   # if begins and ends on the same day, it lasts for only a day, aka result is 0, so i need to always add +1
-                                            
+
                                             d3 = datetime.fromisoformat(orig_start)
                                             begin_index = (d1-d3).days  # neww_start - old start tells me the index when the new one begins
                                             new_bitmap = bitDayField[:begin_index] + newBitField + bitDayField[begin_index+bit_changing_length:]
-                                    
+
                                             orig_train['CZPTTCISMessage']['CZPTTInformation']['PlannedCalendar']['BitmapDays'] = new_bitmap
 
                                             collection_trains.replace_one({'_id':orig_train_id}, orig_train, upsert=True)
-                                    
+
                                     get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
                                     location_collection(data_dict, collection_stations)
                                     collection_trains.replace_one({'_id':id}, data_dict, upsert=True)
@@ -118,6 +115,7 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
 
     print(f"XML errors: {len(xml_errors)}")
     print(f"JSON errors: {len(json_errors)}")
+    print(f"{root_files}/{non_root_files}")
 
 def getID(xml):
     id = None

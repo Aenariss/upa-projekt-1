@@ -48,7 +48,13 @@ sudo rm -rf mongo-data
 
 ```bash
 python3 client.py download      # Download files
+```
+```bash
 python3 client.py download -u   # Unzip files
-python3 client.py parser -x     # Parser xml files to database
+```
+```bash
+python3 client.py parser        # Parser xml files to database
+```
+```bash
 python3 client.py client --from "Přerov" --to "Ostrava-Svinov"
 ```

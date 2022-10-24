@@ -169,7 +169,7 @@ if __name__ == '__main__':
     client_parser.add_argument('--to', help='your destination station')
 
     xml_parser = subs.add_parser('parser')
-    xml_parser.add_argument('-x', help='xml',required=True, action='store_true')
+    xml_parser.add_argument('--path', help='path to directory with xml files')
     args = vars(parser.parse_args())
 
     if(len(args) == 6):
@@ -207,6 +207,10 @@ if __name__ == '__main__':
     if(len(args)== 1):
         # xml parser mode
         try:
-            parse_xml_dir(collection_trains, collection_stations)
+            path = args["path"]
+            if path == None:
+                parse_xml_dir(collection_trains, collection_stations)
+            else:
+                parse_xml_dir(collection_trains, collection_stations,path)
         except:
             parser.print_help()

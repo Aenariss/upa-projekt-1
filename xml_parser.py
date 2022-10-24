@@ -162,7 +162,7 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
 def getID(xml):
     id = None
     try:
-        id = xml['CZPTTCISMessage']['Identifiers']['PlannedTransportIdentifiers'][0]
+        id = xml['CZPTTCISMessage']['Identifiers']['PlannedTransportIdentifiers'][0]['Core']
     except:
         pass
     return id
@@ -170,7 +170,7 @@ def getID(xml):
 def getIDReplaced(xml):
     id = None
     try:
-        id = xml['CZPTTCISMessage']['Identifiers']['RelatedPlannedTransportIdentifiers']
+        id = xml['CZPTTCISMessage']['Identifiers']['RelatedPlannedTransportIdentifiers']['Core']
     except:
         pass
     return id
@@ -189,7 +189,7 @@ def invertBitField(bitfield):
 
 def canceledMessageParse(orig_msg, collection_trains):
     # find the id of the message this cancellation is related to
-    id = orig_msg['CZCanceledPTTMessage']['PlannedTransportIdentifiers'][0]
+    id = orig_msg['CZCanceledPTTMessage']['PlannedTransportIdentifiers'][0]['Core']
 
     original_msg = collection_trains.find_one({"_id":id})
 

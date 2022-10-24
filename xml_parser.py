@@ -60,7 +60,7 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
 
                         else:
                             if "cancel_" in xml_file.name:
-                                canceledMessageParse(data_dict)
+                                canceledMessageParse(data_dict, collection_trains)
                             else:   # replacement trains
                                 id = getID(data_dict)
                                 data_dict["_id"] = id
@@ -138,7 +138,7 @@ def invertBitField(bitfield):
     return new_field
 
 
-def canceledMessageParse(orig_msg):
+def canceledMessageParse(orig_msg, collection_trains):
     # find the id of the message this cancellation is related to
     id = orig_msg['CZCanceledPTTMessage']['PlannedTransportIdentifiers'][0]['Core']   
 

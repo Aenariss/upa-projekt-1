@@ -12,9 +12,9 @@ PORT = 27017
 def get_client():
     return MongoClient(
         host = [ str(DOMAIN) + ":" + str(PORT) ],
-        serverSelectionTimeoutMS = 3000 # 3 second timeout
-        #username = "root",
-        #password = "upa1",
+        serverSelectionTimeoutMS = 3000, # 3 second timeout
+        username = "root",
+        password = "upa1",
     )
 
 # creates collection if doesnt exist, also creates database if you choose different than `app`
@@ -77,7 +77,7 @@ def get_database():
         # catch pymongo.errors.ServerSelectionTimeoutError
         print ("pymongo ERROR:", err)
 
-    return client["test"]
+    return client["app"]
     
   
 # This is added so that many files can reuse the function get_databases()

@@ -4,6 +4,7 @@ from xml.parsers.expat import ExpatError
 from mongo import *
 import traceback
 from datetime import datetime, timedelta
+import re
 
 collection_trains = None
 collection_stations = None
@@ -44,13 +45,21 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
     xml_errors = []
     json_errors = []
     for root, dirs, files in os.walk(path):
-        print(root)
         for file in files:
             with open(os.path.join(root, file), "rb") as xml_file:
                 try:
                     data_dict = xmltodict.parse(xml_file.read())
                     try:
-                        if root == "./xmls":
+                        root_flag = True
+                        x = re.search('.*(xmls.*)$', root)
+                        try:
+                            x = x.group(1)
+                            if len(x) > 4+1:    # xmls/ is 5
+                                root_flag = False
+                        except:
+                            print("Invalid root directory")
+                            return
+                        if root_flag:
                             id = getID(data_dict)  # always save core PA
                             data_dict['_id'] = id
                             get_location_time(data_dict["CZPTTCISMessage"]["CZPTTInformation"]["CZPTTLocation"])
@@ -60,6 +69,7 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
                         else:
                             if "cancel_" in xml_file.name:
                                 canceledMessageParse(data_dict, collection_trains)
+                                print('ok')
                             else:   # replacement trains
                                 id = getID(data_dict)
                                 data_dict["_id"] = id

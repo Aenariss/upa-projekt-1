@@ -46,7 +46,6 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
     for root, dirs, files in os.walk(path):
         print(root)
         for file in files:
-            print(file)
             with open(os.path.join(root, file), "rb") as xml_file:
                 try:
                     data_dict = xmltodict.parse(xml_file.read())

@@ -43,3 +43,12 @@ Delete mongo data (clean up)
 ```bash
 sudo rm -rf mongo-data
 ```
+
+# STEPS
+
+```bash
+python3 client.py download      # Download files
+python3 client.py download -u   # Unzip files
+python3 client.py parser -x     # Parser xml files to database
+python3 client.py client --from "Přerov" --to "Ostrava-Svinov"
+```

@@ -33,6 +33,14 @@ def find_common(odkud, kam):
         result = []
     return result
 
+def find_similar(station):
+    query = {"_id": { "$regex": "^"+station, "$options": "si" } }  # find matching records
+    try:
+        result = collection_stations.find_one(query)["_id"]
+    except:
+        result = []
+    return result
+
 def exist_changed_plan(train, from_station, to_station, dt)-> dict:
     ...
 
@@ -133,12 +141,13 @@ def iso_converter(day, month, year, time):
     if day == None:
         day = current_date.day
     if time == None:
-        time = current_date.time
+        tmp = str(current_date)
+        time = tmp[11:-10]
     hour = time[:-3]
     min = time[3:]
     zone = tz.gettz('Europe / Berlin') 
     date = datetime(year=int(year),month=int(month),day=int(day),hour=int(hour),minute=int(min),tzinfo=zone)
-    return date.isoformat()
+    return date
 
 if __name__ == '__main__':
     setup_db()
@@ -170,9 +179,10 @@ if __name__ == '__main__':
             from_station = args["from"]
             to_station = args["to"]
 
-            trains = find_common(from_station, to_station)
+            trains = find_common(find_similar(from_station), find_similar(to_station))
             try: 
-                dt = datetime.fromisoformat(date + "+00:00")
+                print(date.strftime('Departure at %d. %b %Y Time: %H:%M'))
+                dt = datetime.fromisoformat(date.isoformat() + "+00:00")
                 route = get_route(trains, from_station, to_station, dt)
                 print_route(route, from_station, to_station)
 

@@ -1,10 +1,13 @@
+## XML Parser to parse data
+# UPA Project 1
+# Author: Vojtech Giesl <xgiesl00>, Vojtech Fiala <xfiala61>, Vojtech Kronika <xkroni01>
+
 import os.path
 import xmltodict
 from xml.parsers.expat import ExpatError
 from mongo import *
 import traceback
 from datetime import datetime, timedelta
-import re
 
 collection_trains = None
 collection_stations = None
@@ -174,14 +177,14 @@ def getIDReplaced(xml):
         pass
     return id
 
-
+# Doesnt really invert, just if its 1, turn it to 0
 def invertBitField(bitfield):
     new_field = []
     for i in bitfield:
-        if i == '0':
-            new_field.append('1')
-        else:
+        if i == '1':
             new_field.append('0')
+        else:
+            new_field.append(i)
     new_field = ''.join(new_field)
     return new_field
 
@@ -220,13 +223,13 @@ def trainStopsInStation(location):
     try:
         activityType = location['TrainActivity']
         try:
-            x = '0001' in activityType['TrainActivityType']
+            x = '0001' == activityType['TrainActivityType']
             if not x: 
                 return 0
         except:
             flag = 0
             for i in activityType:
-                if '0001' in i['TrainActivityType']:
+                if '0001' == i['TrainActivityType']:
                     flag = 1
             if not flag:
                 return 0

@@ -1,5 +1,8 @@
+## Client to run the app
+# UPA Project 1
+# Author: Vojtech Kronika <xkroni01>, Vojtech Giesl <xgiesl00>, Vojtech Fiala <xfiala61>
+
 import argparse
-from inspect import trace
 from mongo import *
 from datetime import timedelta, datetime
 from dateutil import tz
@@ -49,29 +52,18 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
     hour = dt.hour
     minute = dt.minute
     time_int = int(hour)*100 + minute
-    aggregate_query = [{
-        '$match': {
-                    'CZPTTCISMessage.Identifiers.PlannedTransportIdentifiers.Core': {"$in": trains}
-                }
-    },
-        {
-            '$match': {
-            '$and': [
-                {
-                    'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{from_station}'
-                },
-                {
-                    'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.TimingAtLocation.Timing.time_int': {
-                        '$gte': time_int
-                    }
-                }
-            ]
-        }
-    }
-    ]
+
+
+    aggregate_query = [
+        {'$match': { 'CZPTTCISMessage.Identifiers.PlannedTransportIdentifiers.0.Core': {"$in": trains}}},
+        {'$match': 
+            {'$and': [{ 'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{from_station}'},
+                      {'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.TimingAtLocation.Timing.time_int': {'$gte': time_int}}]}},
+        ]
 
 
     query_result = collection_trains.aggregate(aggregate_query)
+
     min_value = 3000
     min_result = None
     for result in query_result:
@@ -80,7 +72,9 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
         day_bitmap = calendar["BitmapDays"]
         date_start = calendar["ValidityPeriod"]["StartDateTime"] + "-00:00"
         d1 = datetime.fromisoformat(date_start)
-        index = (dt - d1).days
+        index = (dt - d1).days 
+        if index > len(day_bitmap) or index < 0: # out of bounds
+            continue
         try:
             bitDay = day_bitmap[index]
             if bitDay == "0":  # if its cancelled that day, try another one
@@ -88,22 +82,39 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
         # If the bit day is not set or something is broken in some other way, continue
         except:
             continue
-
+        
+        from_time = 0
+        to_time = 2500
         for location in CZPTTLocation:
             station = location["Location"]["PrimaryLocationName"]
-            if station == from_station:
+            if station == to_station:
+                if not trainStopsInStation(location):
+                    break
+                try:
+                    to_time = location["TimingAtLocation"]["Timing"][0]['time_int']
+                except:
+                    to_time = location["TimingAtLocation"]["Timing"]['time_int']
+
+            if station == from_station: 
+                if not trainStopsInStation(location):
+                    break
+                try:
+                    from_time = location["TimingAtLocation"]["Timing"][0]['time_int']
+                except:
+                    from_time = location["TimingAtLocation"]["Timing"]['time_int']
                 timings = location["TimingAtLocation"]["Timing"]
                 if type(timings) is not list:
                     timings = [timings]
                 for timing in timings:
                     if timing["@TimingQualifierCode"] == "ALD":
-                        if min_value > timing["time_int"] >= time_int:
+                        if min_value > timing["time_int"] and timing["time_int"] >= time_int and from_time < to_time:
                             min_value = timing["time_int"]
                             min_result = result["CZPTTCISMessage"]
-
-            if station == to_station:
+            if station == to_station:   # the train found
                 break
+
     return min_result
+
 def print_route(CZPTTCISMessage:dict, from_station, to_station):
     
     print(f"Route from {from_station} to {to_station} ")
@@ -120,7 +131,6 @@ def print_route(CZPTTCISMessage:dict, from_station, to_station):
         if station == from_station:
             print_out = True
         if print_out:
-
             if trainStopsInStation(location):
                 timings = location["TimingAtLocation"]["Timing"]
                 if type(timings) is not list:
@@ -128,6 +138,11 @@ def print_route(CZPTTCISMessage:dict, from_station, to_station):
                 for timing in timings:
                     if timing["@TimingQualifierCode"] == "ALD":
                         print(f'{timing["Time"][:8]} (GMT{timing["Time"][-6:]}) - {station}')
+
+                    else:   # when the train doesnt continue, it only has an arrival time
+                        if station == to_station:
+                            print(f'{timing["Time"][:8]} (GMT{timing["Time"][-6:]}) - {station}')
+                            break
         if station == to_station:
             break
     print("-------------------------------")
@@ -179,7 +194,7 @@ if __name__ == '__main__':
             from_station = args["from"]
             to_station = args["to"]
 
-            trains = find_common(find_similar(from_station), find_similar(to_station))
+            trains = find_common(from_station, to_station)
             try: 
                 print(date.strftime('Departure at %d. %b %Y Time: %H:%M'))
                 dt = datetime.fromisoformat(date.isoformat() + "+00:00")

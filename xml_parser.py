@@ -46,6 +46,7 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
     json_errors = []
     for root, dirs, files in os.walk(path):
         for file in files:
+            print(file)
             with open(os.path.join(root, file), "rb") as xml_file:
                 try:
                     data_dict = xmltodict.parse(xml_file.read())
@@ -69,7 +70,6 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
                         else:
                             if "cancel_" in xml_file.name:
                                 canceledMessageParse(data_dict, collection_trains)
-                                print('ok')
                             else:   # replacement trains
                                 id = getID(data_dict)
                                 data_dict["_id"] = id
@@ -122,7 +122,7 @@ def parse_xml_dir(collection_trains, collection_stations, path: str = "./xmls"):
 def getID(xml):
     id = None
     try:
-        id = xml['CZPTTCISMessage']['Identifiers']['PlannedTransportIdentifiers'][0]['Core']
+        id = xml['CZPTTCISMessage']['Identifiers']['PlannedTransportIdentifiers'][0]
     except:
         pass
     return id
@@ -130,7 +130,7 @@ def getID(xml):
 def getIDReplaced(xml):
     id = None
     try:
-        id = xml['CZPTTCISMessage']['Identifiers']['RelatedPlannedTransportIdentifiers']['Core']
+        id = xml['CZPTTCISMessage']['Identifiers']['RelatedPlannedTransportIdentifiers']
     except:
         pass
     return id
@@ -149,7 +149,7 @@ def invertBitField(bitfield):
 
 def canceledMessageParse(orig_msg, collection_trains):
     # find the id of the message this cancellation is related to
-    id = orig_msg['CZCanceledPTTMessage']['PlannedTransportIdentifiers'][0]['Core']   
+    id = orig_msg['CZCanceledPTTMessage']['PlannedTransportIdentifiers'][0] 
 
     original_msg = collection_trains.find_one({"_id":id})
 

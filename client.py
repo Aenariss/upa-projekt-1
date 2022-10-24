@@ -51,7 +51,7 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
     time_int = int(hour)*100 + minute
     aggregate_query = [{
         '$match': {
-                    'CZPTTCISMessage.Identifiers.PlannedTransportIdentifiers.Core': {"$in": trains}
+                    'CZPTTCISMessage.Identifiers.PlannedTransportIdentifiers': {"$in": trains}
                 }
     },
         {

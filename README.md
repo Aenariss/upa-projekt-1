@@ -1,5 +1,11 @@
 # UPA-projekt-1
 
+## About
+Simple cli based utility for search train route between two stations in the Czech Republic using data from <https://portal.cisjr.cz/pub/draha/celostatni/szdc/>. \
+Program uses docker for hosting database and source files.
+
+## Prerequisites
+Docker and docker-compose - <https://www.docker.com/> \ 
 
 ## Usage
 
@@ -26,6 +32,7 @@ python3 client.py parser
 # examples of finding a route 
 python3 client.py client --from "Brno hl. n." --to "Uherské Hradiště"
 python3 client.py client --from 'Brno hl. n.' --to 'Břeclav' --time 15:00
+python3 client.py client --from "Přerov" --to "Ostrava-Svinov" --day 25 --month 10 --year 2022 --time 08:00
 python3 client.py client --from "Brno hl. n." --to "Praha hl. n." --day 29 --month 9 --year 2022 --time 10:00
 
 

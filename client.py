@@ -56,7 +56,7 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
 
     aggregate_query = [
         {'$match': { 'CZPTTCISMessage.Identifiers.PlannedTransportIdentifiers.0.Core': {"$in": trains}}},
-        {'$match': 
+        {'$match':
             {'$and': [{ 'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.Location.PrimaryLocationName': f'{from_station}'},
                       {'CZPTTCISMessage.CZPTTInformation.CZPTTLocation.TimingAtLocation.Timing.time_int': {'$gte': time_int}}]}},
         ]
@@ -72,7 +72,7 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
         day_bitmap = calendar["BitmapDays"]
         date_start = calendar["ValidityPeriod"]["StartDateTime"] + "-00:00"
         d1 = datetime.fromisoformat(date_start)
-        index = (dt - d1).days 
+        index = (dt - d1).days
         if index > len(day_bitmap) or index < 0: # out of bounds
             continue
         try:
@@ -82,7 +82,7 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
         # If the bit day is not set or something is broken in some other way, continue
         except:
             continue
-        
+
         from_time = 0
         to_time = 2500
         for location in CZPTTLocation:
@@ -95,7 +95,7 @@ def get_route(trains:list, from_station, to_station, dt:datetime):
                 except:
                     to_time = location["TimingAtLocation"]["Timing"]['time_int']
 
-            if station == from_station: 
+            if station == from_station:
                 if not trainStopsInStation(location):
                     break
                 try:
@@ -166,7 +166,6 @@ def iso_converter(day, month, year, time):
 
 if __name__ == '__main__':
     setup_db()
-    
     # help, download (v, --unzip), xml parser, from, to, day, time
     parser = argparse.ArgumentParser(prog='CeskeDrahyFinder')
     subs = parser.add_subparsers()
@@ -214,8 +213,10 @@ if __name__ == '__main__':
             downloader = Downloader(verbose)
             if args["u"] == True:
                 downloader.unzipFolders()
+                print("files unzipped successfully")
             else:
                 downloader.getFiles()
+                print("files download successfully")
         except:
             parser.print_help()
 
@@ -227,5 +228,6 @@ if __name__ == '__main__':
                 parse_xml_dir(collection_trains, collection_stations)
             else:
                 parse_xml_dir(collection_trains, collection_stations,path)
+            print("XMLS parsed successfully")
         except:
             parser.print_help()

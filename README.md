@@ -1,60 +1,37 @@
-# upa-projekt-1
-UPA projekt 1
+# UPA-projekt-1
 
 
-# DOCKER INSTRUCTIONS 
-
-First you need to build docker image:
-```bash
-docker build -f Dockerfile -t upa_proj_mongo:latest .
-```
-
-Then you run container based on currently created image
+## Usage
 
 ```bash
-docker run -it --rm --name upa_proj_mongo upa_proj_mongo:latest /bin/bash
-```
+# build docker image and run docker container on background
+# if you already have source files downloaded copy them into resources directory and they will be copied into container
+docker-compose build && docker-compose up -d
 
-Note: --rm flag removes container after exiting, when you want container to persist remove --rm flag
+# run bash into container
+docker-compose exec mongo-python /bin/bash
 
-# DOCKER COMPOSE INSTRUCTIONS 
+# download files from https://portal.cisjr.cz/pub/draha/celostatni/szdc/2022/ (it takes +- 30min)
+# only if you dont copied files on start
+python3 client.py download 
 
-First you need to build and start:
-```bash
-docker-compose up --build -d
-```
 
-Then you need find CONTAINER ID
-```bash
-docker ps
-```
+# uzip files
+python3 client.py download -u
 
-Terminal inside container
-```bash
-docker exec -it <CONTAINER_ID> /bin/bash
-```
+# parse files and upload into db (+- 10min)
+python3 client.py parser
 
-Delete container (clean up)
-```bash
+
+# examples of finding a route 
+python3 client.py client --from "Brno hl. n." --to "Uherské Hradiště"
+python3 client.py client --from 'Brno hl. n.' --to 'Břeclav' --time 15:00
+python3 client.py client --from "Brno hl. n." --to "Praha hl. n." --day 29 --month 9 --year 2022 --time 10:00
+
+
+
+# clean container (run on host machine)
 docker-compose down
-```
+docker-compose rm
 
-Delete mongo data (clean up)
-```bash
-sudo rm -rf mongo-data
-```
-
-# STEPS
-
-```bash
-python3 client.py download      # Download files
-```
-```bash
-python3 client.py download -u   # Unzip files
-```
-```bash
-python3 client.py parser        # Parser xml files to database
-```
-```bash
-python3 client.py client --from "Přerov" --to "Ostrava-Svinov"
 ```

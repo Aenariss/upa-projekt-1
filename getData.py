@@ -108,10 +108,8 @@ class Downloader:
             try:
                 z = zipfile.ZipFile(self.__resource_folder + file).extractall(self.__xml_folder)
             except:
-                self.__verbosePrint("Couldnt extract file", file, "deleting it a trying to redownload")
+                print("File "+ file + " could not be extracted! Probably a corrupted download. Please run the download again (and delete the file, if it has not been already)")
                 os.remove(self.__resource_folder + file)
-                self.getFiles()
-                z = zipfile.ZipFile(self.__resource_folder + file).extractall(self.__xml_folder)
 
             self.__verbosePrint("extracting file " + file)
         
@@ -129,15 +127,7 @@ class Downloader:
                             new_file = open(self.__xml_folder + folder + '/' + file[:-4], "wb") # without hte .zip
                             new_file.write(file_content)
                 except:
-                    self.__verbosePrint("Couldnt extract file", file, "deleting it a trying to redownload")
-                    os.remove(self.__resource_folder + file)
-                    self.getFiles()
-                    try:
-                        z = zipfile.ZipFile(self.__resource_folder + folder +'/' + file).extractall(self.__xml_folder + folder)
-                    except:
-                        with gzip.open(self.__resource_folder + folder +'/' + file, 'rb') as f:
-                            file_content = f.read() 
-                            new_file = open(self.__xml_folder + folder + '/' + file[:-4], "wb") # without hte .zip
-                            new_file.write(file_content)
+                    print("File "+ file + " could not be extracted! Probably a corrupted download. Please run the download again (and delete the file, if it has not been already)")
+                    os.remove(self.__resource_folder  + folder +'/' + file)
 
                 self.__verbosePrint("extracting file " + file)

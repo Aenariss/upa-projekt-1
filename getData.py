@@ -105,7 +105,14 @@ class Downloader:
         for file in files:
             if "oprava_poznamek" in file:
                 continue
-            z = zipfile.ZipFile(self.__resource_folder + file).extractall(self.__xml_folder)
+            try:
+                z = zipfile.ZipFile(self.__resource_folder + file).extractall(self.__xml_folder)
+            except:
+                self.__verbosePrint("Couldnt extract file", file, "deleting it a trying to redownload")
+                os.remove(self.__resource_folder + file)
+                self.getFiles()
+                z = zipfile.ZipFile(self.__resource_folder + file).extractall(self.__xml_folder)
+
             self.__verbosePrint("extracting file " + file)
         
         # additions
@@ -114,10 +121,23 @@ class Downloader:
             folder_files = self.__filesInFolder(self.__resource_folder + folder)
             for file in folder_files:
                 try:
-                    z = zipfile.ZipFile(self.__resource_folder + folder +'/' + file).extractall(self.__xml_folder + folder)
+                    try:
+                        z = zipfile.ZipFile(self.__resource_folder + folder +'/' + file).extractall(self.__xml_folder + folder)
+                    except:
+                        with gzip.open(self.__resource_folder + folder +'/' + file, 'rb') as f:
+                            file_content = f.read() 
+                            new_file = open(self.__xml_folder + folder + '/' + file[:-4], "wb") # without hte .zip
+                            new_file.write(file_content)
                 except:
-                    with gzip.open(self.__resource_folder + folder +'/' + file, 'rb') as f:
-                        file_content = f.read() 
-                        new_file = open(self.__xml_folder + folder + '/' + file[:-4], "wb") # without hte .zip
-                        new_file.write(file_content)
+                    self.__verbosePrint("Couldnt extract file", file, "deleting it a trying to redownload")
+                    os.remove(self.__resource_folder + file)
+                    self.getFiles()
+                    try:
+                        z = zipfile.ZipFile(self.__resource_folder + folder +'/' + file).extractall(self.__xml_folder + folder)
+                    except:
+                        with gzip.open(self.__resource_folder + folder +'/' + file, 'rb') as f:
+                            file_content = f.read() 
+                            new_file = open(self.__xml_folder + folder + '/' + file[:-4], "wb") # without hte .zip
+                            new_file.write(file_content)
+
                 self.__verbosePrint("extracting file " + file)

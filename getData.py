@@ -98,6 +98,7 @@ class Downloader:
                             self.__downloadFileIfNotExists(file, files_in_subfolder, self.__base_url + file, folder_name + '/' +  file_name, self.__base_url + file)
             except:
                 print("Doslo k chybe na strane vzdaleneho serveru, spustte stahovani znovu!")
+                return
     
     def unzipFolders(self):
         self.__createFolder(self.__xml_folder)  # create new xml folder

@@ -1,7 +1,7 @@
 # UPA-projekt-1
 
 ## About
-Simple cli based utility for search train route between two stations in the Czech Republic using data from <https://portal.cisjr.cz/pub/draha/celostatni/szdc/>. \
+Simple cli based utility for finding direct train route between two stations in the Czech Republic using data from <https://portal.cisjr.cz/pub/draha/celostatni/szdc/>. \
 Program uses docker for hosting database and source files.
 
 ## Prerequisites

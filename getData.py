@@ -74,27 +74,30 @@ class Downloader:
         files_in_folder = self.__filesInFolder(self.__resource_folder)
 
         for folder in folders:
-            folder = folder.decode('utf-8')
-            # it's not a folder, its a file
-            if (folder[-3:] == 'zip'):
-                file_name = self.__getFilename(folder)
-                self.__downloadFileIfNotExists(folder, files_in_folder, self.__base_url + folder, self.__resource_folder + file_name, self.__resource_folder + file_name)
-            
-            # its an actual folder
-            else:
-                if (self.__verbose):
-                    print("going through files in " + self.__base_url + folder)
+            try:
+                folder = folder.decode('utf-8')
+                # it's not a folder, its a file
+                if (folder[-3:] == 'zip'):
+                    file_name = self.__getFilename(folder)
+                    self.__downloadFileIfNotExists(folder, files_in_folder, self.__base_url + folder, self.__resource_folder + file_name, self.__resource_folder + file_name)
+                
+                # its an actual folder
+                else:
+                    if (self.__verbose):
+                        print("going through files in " + self.__base_url + folder)
 
-                folder_name = self.__resource_folder + self.__getFilename(folder[:-1])
-                self.__createFolder(folder_name)
-                train_files = self.__subpages(self.__base_url + folder)
-                files_in_subfolder = self.__filesInFolder(folder_name)
+                    folder_name = self.__resource_folder + self.__getFilename(folder[:-1])
+                    self.__createFolder(folder_name)
+                    train_files = self.__subpages(self.__base_url + folder)
+                    files_in_subfolder = self.__filesInFolder(folder_name)
 
-                for file in train_files:
-                    file = file.decode('utf-8')
-                    if (file[-3:] == 'zip'):  # if its actually a file
-                        file_name = self.__getFilename(file)
-                        self.__downloadFileIfNotExists(file, files_in_subfolder, self.__base_url + file, folder_name + '/' +  file_name, self.__base_url + file)
+                    for file in train_files:
+                        file = file.decode('utf-8')
+                        if (file[-3:] == 'zip'):  # if its actually a file
+                            file_name = self.__getFilename(file)
+                            self.__downloadFileIfNotExists(file, files_in_subfolder, self.__base_url + file, folder_name + '/' +  file_name, self.__base_url + file)
+            except:
+                print("Doslo k chybe na strane vzdaleneho serveru, spustte stahovani znovu!")
     
     def unzipFolders(self):
         self.__createFolder(self.__xml_folder)  # create new xml folder
